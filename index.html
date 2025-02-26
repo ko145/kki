@@ -11,6 +11,7 @@
             background: #f8f9fa; 
             padding: 20px; 
             color: #333;
+            position: relative;
         }
         .section { margin-bottom: 20px; }
         .section-title { 
@@ -55,10 +56,30 @@
             border-radius: 8px;
         }
         .reset-btn:hover { background: #e0e0e0; }
+        .social-icons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .social-icon {
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .social-icon:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
     <h1>生态目录</h1>
+    <div class="social-icons">
+        <img src="https://cdn.simpleicons.org/x" class="social-icon" onclick="window.open('https://x.com/home', '_blank')" alt="X">
+        <img src="https://cdn.simpleicons.org/discord" class="social-icon" onclick="window.open('https://discord.com/channels/@me', '_blank')" alt="Discord">
+    </div>
     <div class='section'>
         <button class='btn' onclick="window.open('https://web.telegram.org/a/#1557283451', '_blank')">TG合约</button>
         <button class='btn' onclick="window.open('https://web.telegram.org/a/#7417912777', '_blank')">TG坚果</button>
