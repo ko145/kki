@@ -3,40 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>随机按钮排列</title>
+    <title>生态目录</title>
     <style>
-        body { text-align: center; font-family: Arial, sans-serif; }
-        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+        body { 
+            text-align: center; 
+            font-family: Arial, sans-serif; 
+            background: #f8f9fa; 
+            padding: 20px; 
+            color: #333;
+        }
+        .section { margin-bottom: 20px; }
+        .section-title { 
+            font-size: 22px; 
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            cursor: pointer;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .button-group { 
+            display: none; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 12px; 
+            margin-top: 10px;
+        }
         .btn { 
-            padding: 10px 20px; 
+            padding: 12px 24px; 
             font-size: 16px; 
             cursor: pointer; 
-            border: 1px solid #333; 
-            background: #f0f0f0; 
-            transition: background 0.3s; 
+            border: 2px solid #007bff; 
+            background: white; 
+            transition: background 0.3s, color 0.3s; 
+            border-radius: 8px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
         }
-        .btn:hover { background: #e0e0e0; }
+        .btn:hover { background: #007bff; color: white; }
         .checked { background: lightgreen; }
+        .ecosystem-active { background: #ffb3b3 !important; color: #721c24; }
         .reset-btn { 
             margin-top: 20px; 
-            padding: 10px 20px; 
+            padding: 12px 24px; 
             font-size: 16px; 
             cursor: pointer; 
-            border: 1px solid #333; 
-            background: #f0f0f0; 
+            border: 2px solid #333; 
+            background: #ffffff; 
             transition: background 0.3s; 
+            border-radius: 8px;
         }
         .reset-btn:hover { background: #e0e0e0; }
     </style>
 </head>
 <body>
-    <h1>随机按钮排列</h1>
-    <div class="container" id="buttonContainer"></div>
+    <h1>生态目录</h1>
+    <div class='section'>
+        <button class='btn' onclick="window.open('https://web.telegram.org/a/#1557283451', '_blank')">TG合约</button>
+        <button class='btn' onclick="window.open('https://web.telegram.org/a/#7417912777', '_blank')">TG坚果</button>
+    </div>
+    <div class='section'>
+        <div class='section-title' onclick='toggleSection("monadProjects")'>Monad</div>
+        <div class='button-group' id='monadProjects'></div>
+    </div>
     <button class="reset-btn" id="resetButton">手动重置</button>
 
     <script>
-        const buttons = [
-            { text: "官网", link: "https://testnet.monad.xyz/" }, // 官网默认排在最前面
+        const monadProjects = [
+            { text: "官网", link: "https://testnet.monad.xyz/" },
             { text: "NFT1", link: "https://magiceden.io/launchpad/monad-testnet/emmy_on_monad" },
             { text: "NFT2", link: "https://magiceden.io/mint-terminal/monad-testnet/0x436ee7219bb099f71c9db9c7de8862a9bde891ae" },
             { text: "NFT3", link: "https://magiceden.io/mint-terminal/monad-testnet/0x5e008bf401bb0289d85b9276a4f2b3f1aa91c10d" },
@@ -45,92 +80,67 @@
             { text: "kuru土狗交易", link: "https://www.kuru.io/markets" }
         ];
 
-        // Fisher-Yates 洗牌算法，确保均匀随机，但保留“官网”在最前面
         function shuffle(array) {
-            let shuffled = [...array];
-            const officialBtn = shuffled.shift(); // 移除“官网”
-            for (let i = shuffled.length - 1; i > 0; i--) {
+            for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                [array[i], array[j]] = [array[j], array[i]];
             }
-            shuffled.unshift(officialBtn); // 将“官网”放回最前面
-            return shuffled;
+            return array;
         }
 
-        // 保存状态到 localStorage
-        function saveState(buttons) {
-            try {
-                localStorage.setItem('buttonState', JSON.stringify(buttons));
-            } catch (e) {
-                console.error('无法保存状态到 localStorage:', e);
-            }
+        function saveState(state) {
+            localStorage.setItem('monadState', JSON.stringify(state));
+            localStorage.setItem('lastReset', new Date().getTime());
         }
 
-        // 从 localStorage 加载状态
         function loadState() {
-            try {
-                const saved = localStorage.getItem('buttonState');
-                if (saved) return JSON.parse(saved);
-            } catch (e) {
-                console.error('无法加载状态从 localStorage:', e);
-            }
-            return shuffle(buttons.map(btn => ({ ...btn, checked: false })));
+            const saved = localStorage.getItem('monadState');
+            return saved ? JSON.parse(saved) : shuffle(monadProjects.map(p => ({ ...p, clicked: false })));
         }
 
-        // 每日重置逻辑
-        function resetDaily() {
-            const lastReset = localStorage.getItem('lastReset');
-            const now = new Date();
-            const resetTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
-            const lastResetTime = lastReset ? parseInt(lastReset) : 0;
-
-            if (!lastReset || (now.getTime() >= resetTime && lastResetTime < resetTime)) {
-                localStorage.setItem('buttonState', JSON.stringify(shuffle(buttons.map(btn => ({ ...btn, checked: false })))));
-                localStorage.setItem('lastReset', now.getTime());
-            }
-        }
-
-        // 创建所有按钮
         function createButtons() {
-            const container = document.getElementById('buttonContainer');
+            const container = document.getElementById('monadProjects');
             container.innerHTML = "";
-            const savedButtons = loadState();
+            const savedState = loadState();
 
-            savedButtons.forEach((btn, index) => {
+            savedState.forEach((project, index) => {
                 const button = document.createElement('button');
-                button.innerText = btn.checked ? btn.text + " √" : btn.text;
+                button.innerText = project.text;
                 button.classList.add('btn');
-                if (btn.checked) button.classList.add('checked');
+                if (project.clicked) button.classList.add('checked');
 
                 button.addEventListener('click', () => {
-                    window.open(btn.link, '_blank');
-                    savedButtons[index].checked = true;
-                    saveState(savedButtons);
-                    updateButton(button, btn); // 局部更新
+                    window.open(project.link, '_blank');
+                    savedState[index].clicked = true;
+                    saveState(savedState);
+                    button.classList.add('checked');
                 });
                 container.appendChild(button);
             });
         }
 
-        // 局部更新单个按钮
-        function updateButton(button, btn) {
-            button.innerText = btn.checked ? btn.text + " √" : btn.text;
-            if (btn.checked) button.classList.add('checked');
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.style.display = section.style.display === 'flex' ? 'none' : 'flex';
         }
 
-        // 手动重置函数
-        function manualReset() {
-            localStorage.removeItem('buttonState'); // 清除按钮状态
-            localStorage.removeItem('lastReset');   // 清除重置时间
-            createButtons(); // 重新生成按钮
+        function resetDaily() {
+            const lastReset = localStorage.getItem('lastReset');
+            const now = new Date();
+            const resetTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
+            if (!lastReset || (now.getTime() >= resetTime && lastReset < resetTime)) {
+                localStorage.removeItem('monadState');
+                localStorage.setItem('lastReset', now.getTime());
+            }
         }
 
-        // 初始化
+        document.getElementById('resetButton').addEventListener('click', () => {
+            localStorage.removeItem('monadState');
+            createButtons();
+        });
+
         resetDaily();
         createButtons();
-
-        // 绑定手动重置按钮事件
-        document.getElementById('resetButton').addEventListener('click', manualReset);
     </script>
 </body>
 </html>
