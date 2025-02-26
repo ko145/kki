@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机按钮排列</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+        .btn { 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            border: 1px solid #333; 
+            background: #f0f0f0; 
+            transition: background 0.3s; 
+        }
+        .btn:hover { background: #e0e0e0; }
+        .checked { background: lightgreen; }
+        .reset-btn { 
+            margin-top: 20px; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            border: 1px solid #333; 
+            background: #f0f0f0; 
+            transition: background 0.3s; 
+        }
+        .reset-btn:hover { background: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <h1>随机按钮排列</h1>
+    <div class="container" id="buttonContainer"></div>
+    <button class="reset-btn" id="resetButton">手动重置</button>
+
+    <script>
+        const buttons = [
+            { text: "官网", link: "https://testnet.monad.xyz/" }, // 官网默认排在最前面
+            { text: "NFT1", link: "https://magiceden.io/launchpad/monad-testnet/emmy_on_monad" },
+            { text: "NFT2", link: "https://magiceden.io/mint-terminal/monad-testnet/0x436ee7219bb099f71c9db9c7de8862a9bde891ae" },
+            { text: "NFT3", link: "https://magiceden.io/mint-terminal/monad-testnet/0x5e008bf401bb0289d85b9276a4f2b3f1aa91c10d" },
+            { text: "NFT4", link: "https://testnet.lilchogstars.com/" },
+            { text: "NFT5", link: "https://magiceden.io/launchpad/monad-testnet/overnads" },
+            { text: "kuru土狗交易", link: "https://www.kuru.io/markets" }
+        ];
+
+        // Fisher-Yates 洗牌算法，确保均匀随机，但保留“官网”在最前面
+        function shuffle(array) {
+            let shuffled = [...array];
+            const officialBtn = shuffled.shift(); // 移除“官网”
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            shuffled.unshift(officialBtn); // 将“官网”放回最前面
+            return shuffled;
+        }
+
+        // 保存状态到 localStorage
+        function saveState(buttons) {
+            try {
+                localStorage.setItem('buttonState', JSON.stringify(buttons));
+            } catch (e) {
+                console.error('无法保存状态到 localStorage:', e);
+            }
+        }
+
+        // 从 localStorage 加载状态
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('buttonState');
+                if (saved) return JSON.parse(saved);
+            } catch (e) {
+                console.error('无法加载状态从 localStorage:', e);
+            }
+            return shuffle(buttons.map(btn => ({ ...btn, checked: false })));
+        }
+
+        // 每日重置逻辑
+        function resetDaily() {
+            const lastReset = localStorage.getItem('lastReset');
+            const now = new Date();
+            const resetTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
+            const lastResetTime = lastReset ? parseInt(lastReset) : 0;
+
+            if (!lastReset || (now.getTime() >= resetTime && lastResetTime < resetTime)) {
+                localStorage.setItem('buttonState', JSON.stringify(shuffle(buttons.map(btn => ({ ...btn, checked: false })))));
+                localStorage.setItem('lastReset', now.getTime());
+            }
+        }
+
+        // 创建所有按钮
+        function createButtons() {
+            const container = document.getElementById('buttonContainer');
+            container.innerHTML = "";
+            const savedButtons = loadState();
+
+            savedButtons.forEach((btn, index) => {
+                const button = document.createElement('button');
+                button.innerText = btn.checked ? btn.text + " √" : btn.text;
+                button.classList.add('btn');
+                if (btn.checked) button.classList.add('checked');
+
+                button.addEventListener('click', () => {
+                    window.open(btn.link, '_blank');
+                    savedButtons[index].checked = true;
+                    saveState(savedButtons);
+                    updateButton(button, btn); // 局部更新
+                });
+                container.appendChild(button);
+            });
+        }
+
+        // 局部更新单个按钮
+        function updateButton(button, btn) {
+            button.innerText = btn.checked ? btn.text + " √" : btn.text;
+            if (btn.checked) button.classList.add('checked');
+        }
+
+        // 手动重置函数
+        function manualReset() {
+            localStorage.removeItem('buttonState'); // 清除按钮状态
+            localStorage.removeItem('lastReset');   // 清除重置时间
+            createButtons(); // 重新生成按钮
+        }
+
+        // 初始化
+        resetDaily();
+        createButtons();
+
+        // 绑定手动重置按钮事件
+        document.getElementById('resetButton').addEventListener('click', manualReset);
+    </script>
+</body>
+</html>
