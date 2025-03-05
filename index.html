@@ -77,12 +77,12 @@
 <body>
     <h1>生态目录</h1>
     <div class="social-icons">
-        <img src="https://cdn.simpleicons.org/x" class="social-icon" onclick="window.open('https://x.com/home', '_blank')" alt="X">
-        <img src="https://cdn.simpleicons.org/discord" class="social-icon" onclick="window.open('https://discord.com/channels/@me', '_blank')" alt="Discord">
+        <img src="https://cdn.simpleicons.org/x" class="social-icon" onclick="window.open('https://x.com/home', '_blank'); window.focus();" alt="X">
+        <img src="https://cdn.simpleicons.org/discord" class="social-icon" onclick="window.open('https://discord.com/channels/@me', '_blank'); window.focus();" alt="Discord">
     </div>
     <div class='section'>
-        <button class='btn' onclick="window.open('https://web.telegram.org/a/#1557283451', '_blank')">TG合约</button>
-        <button class='btn' onclick="window.open('https://web.telegram.org/a/#7417912777', '_blank')">TG坚果</button>
+        <button class='btn' onclick="window.open('https://web.telegram.org/a/#1557283451', '_blank'); window.focus();">TG合约</button>
+        <button class='btn' onclick="window.open('https://web.telegram.org/a/#7417912777', '_blank'); window.focus();">TG坚果</button>
     </div>
     <div class='section'>
         <div class='section-title' onclick='toggleSection("monadProjects")'>Monad</div>
@@ -92,21 +92,20 @@
 
     <script>
         const monadProjects = [
-            { text: "官网", link: "https://testnet.monad.xyz/" },
-            { text: "NFT1", link: "https://magiceden.io/launchpad/monad-testnet/emmy_on_monad" },
-            { text: "NFT2", link: "https://magiceden.io/mint-terminal/monad-testnet/0x436ee7219bb099f71c9db9c7de8862a9bde891ae" },
-            { text: "NFT3", link: "https://magiceden.io/mint-terminal/monad-testnet/0x5e008bf401bb0289d85b9276a4f2b3f1aa91c10d" },
-            { text: "NFT4", link: "https://testnet.lilchogstars.com/" },
-            { text: "NFT5", link: "https://magiceden.io/launchpad/monad-testnet/overnads" },
-            { text: "kuru土狗交易", link: "https://www.kuru.io/markets" }
+            { text: "官网", link: "https://testnet.monad.xyz/", id: "btn-official" },
+            { text: "※dus领水", link: "https://www.dusted.app/rooms/monad-testnet/native", id: "btn-dus" },
+            { text: "※aic投票", link: "https://aicraft.fun/projects/fizen", id: "btn-aic" },
+            { text: "※fan卡牌", link: "https://monad.fantasy.top/", id: "btn-fan" }
         ];
 
         function shuffle(array) {
-            for (let i = array.length - 1; i > 0; i--) {
+            const fixedFirst = array.slice(0, 1); // 固定“官网”在头部
+            const rest = array.slice(1);
+            for (let i = rest.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [rest[i], rest[j]] = [rest[j], rest[i]];
             }
-            return array;
+            return fixedFirst.concat(rest);
         }
 
         function saveState(state) {
@@ -129,12 +128,15 @@
                 button.innerText = project.text;
                 button.classList.add('btn');
                 if (project.clicked) button.classList.add('checked');
+                button.id = project.id || `btn-${project.text}-${index}`;
 
                 button.addEventListener('click', () => {
                     window.open(project.link, '_blank');
                     savedState[index].clicked = true;
                     saveState(savedState);
                     button.classList.add('checked');
+                    // 打开新窗口后立即将焦点拉回生态目录窗口
+                    setTimeout(() => window.focus(), 100);
                 });
                 container.appendChild(button);
             });
@@ -148,10 +150,13 @@
         function resetDaily() {
             const lastReset = localStorage.getItem('lastReset');
             const now = new Date();
-            const resetTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
-            if (!lastReset || (now.getTime() >= resetTime && lastReset < resetTime)) {
+            const today6AM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0).getTime();
+            const currentTime = now.getTime();
+
+            if (!lastReset || (currentTime >= today6AM && parseInt(lastReset) < today6AM)) {
                 localStorage.removeItem('monadState');
-                localStorage.setItem('lastReset', now.getTime());
+                localStorage.setItem('lastReset', currentTime);
+                createButtons();
             }
         }
 
