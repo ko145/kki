@@ -72,6 +72,32 @@
         .social-icon:hover {
             transform: scale(1.1);
         }
+        .input-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .input-box {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            width: 200px;
+        }
+        .confirm-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid #007bff;
+            background: white;
+            transition: background 0.3s, color 0.3s;
+            border-radius: 5px;
+        }
+        .confirm-btn:hover {
+            background: #007bff;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -89,6 +115,10 @@
         <div class='button-group' id='monadProjects'></div>
     </div>
     <button class="reset-btn" id="resetButton">手动重置</button>
+    <div class="input-container">
+        <input type="text" class="input-box" id="userInput" placeholder="请输入内容">
+        <button class="confirm-btn" onclick="confirmInput()">确认</button>
+    </div>
 
     <script>
         const monadProjects = [
@@ -135,7 +165,6 @@
                     savedState[index].clicked = true;
                     saveState(savedState);
                     button.classList.add('checked');
-                    // 打开新窗口后立即将焦点拉回生态目录窗口
                     setTimeout(() => window.focus(), 100);
                 });
                 container.appendChild(button);
@@ -157,6 +186,16 @@
                 localStorage.removeItem('monadState');
                 localStorage.setItem('lastReset', currentTime);
                 createButtons();
+            }
+        }
+
+        function confirmInput() {
+            const input = document.getElementById('userInput').value;
+            if (input.trim() === "") {
+                alert("请输入内容！");
+            } else {
+                alert("您输入的内容是：" + input);
+                document.getElementById('userInput').value = ""; // 清空输入框
             }
         }
 
