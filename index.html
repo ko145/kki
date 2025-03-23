@@ -41,12 +41,22 @@
             transition: background 0.3s, color 0.3s; 
             border-radius: 8px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
         .btn:hover { background: #007bff; color: white; }
         .checked { background: lightgreen; }
+        .disabled { 
+            pointer-events: none; 
+            opacity: 0.5; 
+        }
         .ecosystem-active { background: #ffb3b3 !important; color: #721c24; }
+        .reset-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
         .reset-btn { 
-            margin-top: 20px; 
             padding: 12px 24px; 
             font-size: 16px; 
             cursor: pointer; 
@@ -72,32 +82,6 @@
         .social-icon:hover {
             transform: scale(1.1);
         }
-        .input-container {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-        .input-box {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #007bff;
-            border-radius: 5px;
-            width: 200px;
-        }
-        .confirm-btn {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: 2px solid #007bff;
-            background: white;
-            transition: background 0.3s, color 0.3s;
-            border-radius: 5px;
-        }
-        .confirm-btn:hover {
-            background: #007bff;
-            color: white;
-        }
     </style>
 </head>
 <body>
@@ -110,48 +94,91 @@
         <button class='btn' onclick="window.open('https://web.telegram.org/a/#1557283451', '_blank'); window.focus();">TG合约</button>
         <button class='btn' onclick="window.open('https://web.telegram.org/a/#7417912777', '_blank'); window.focus();">TG坚果</button>
     </div>
-    <div class='section'>
-        <div class='section-title' onclick='toggleSection("monadProjects")'>Monad</div>
-        <div class='button-group' id='monadProjects'></div>
-    </div>
-    <button class="reset-btn" id="resetButton">手动重置</button>
-    <div class="input-container">
-        <input type="text" class="input-box" id="userInput" placeholder="请输入内容">
-        <button class="confirm-btn" onclick="confirmInput()">确认</button>
+    <div id="ecosystems"></div>
+    <div class="reset-buttons">
+        <button class="reset-btn" id="resetProjectsButton">项目重置</button>
+        <button class="reset-btn" id="resetEcosystemsButton">生态重置</button>
     </div>
 
     <script>
-        const monadProjects = [
-            { text: "官网", link: "https://testnet.monad.xyz/", id: "btn-official" },
-            { text: "※dus领水", link: "https://www.dusted.app/rooms/monad-testnet/native", id: "btn-dus" },
-            { text: "※aic投票", link: "https://aicraft.fun/projects/fizen", id: "btn-aic" },
-            { text: "※fan卡牌", link: "https://monad.fantasy.top/", id: "btn-fan" }
+        const ecosystemsData = [
+            {
+                name: "Monad",
+                projects: [
+                    { text: "官网", link: "https://testnet.monad.xyz/", id: "btn-official" },
+                    { text: "chg领水", link: "https://discord.com/channels/1253481714710220810/1343445134028574721", id: "btn-chg" }, // 固定在第二个位置
+                    { text: "※dus领水", link: "https://www.dusted.app/rooms/monad-testnet/native", id: "btn-dus" },
+                    { text: "※aic投票", link: "https://aicraft.fun/projects/fizen", id: "btn-aic" },
+                    { text: "※fan卡牌", link: "https://monad.fantasy.top/", id: "btn-fan" },
+                    { text: "cur交互", link: "https://monad.curvance.com/", id: "btn-cur" },
+                    { text: "lev预测", link: "https://app.levr.bet/pregame", id: "btn-lev" }
+                ],
+                containerId: "monadProjects",
+                storageKey: "monadState"
+            },
+            {
+                name: "MegaETH",
+                projects: [
+                    { text: "官网", link: "https://megaeth.io/", id: "mega-btn-official" },
+                    { text: "Docs", link: "https://docs.megaeth.io/", id: "mega-btn-docs" },
+                    { text: "Blog", link: "https://blog.megaeth.io/", id: "mega-btn-blog" }
+                ],
+                containerId: "megaethProjects",
+                storageKey: "megaethState"
+            }
         ];
 
+        // 防抖函数，限制点击频率
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
         function shuffle(array) {
-            const fixedFirst = array.slice(0, 1); // 固定“官网”在头部
-            const rest = array.slice(1);
+            const fixedFirstTwo = array.slice(0, 2); // 固定前两个（官网和chg领水）
+            const rest = array.slice(2);
             for (let i = rest.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [rest[i], rest[j]] = [rest[j], rest[i]];
             }
-            return fixedFirst.concat(rest);
+            return fixedFirstTwo.concat(rest);
         }
 
-        function saveState(state) {
-            localStorage.setItem('monadState', JSON.stringify(state));
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function saveState(state, key) {
+            localStorage.setItem(key, JSON.stringify(state));
             localStorage.setItem('lastReset', new Date().getTime());
         }
 
-        function loadState() {
-            const saved = localStorage.getItem('monadState');
-            return saved ? JSON.parse(saved) : shuffle(monadProjects.map(p => ({ ...p, clicked: false })));
+        function loadState(key) {
+            const saved = localStorage.getItem(key);
+            return saved ? JSON.parse(saved) : null;
         }
 
-        function createButtons() {
-            const container = document.getElementById('monadProjects');
+        function createButtons(projects, containerId, storageKey) {
+            const container = document.getElementById(containerId);
             container.innerHTML = "";
-            const savedState = loadState();
+            let savedState = loadState(storageKey);
+            if (!savedState) {
+                savedState = shuffle(projects.map(p => ({ ...p, clicked: false })));
+            } else {
+                // 确保新添加的项目被包含，即使之前的状态未包含它们
+                const updatedProjects = projects.map((project, index) => {
+                    const savedItem = savedState.find(item => item.id === project.id);
+                    return savedItem ? { ...project, clicked: savedItem.clicked } : { ...project, clicked: false };
+                });
+                savedState = shuffle(updatedProjects);
+            }
 
             savedState.forEach((project, index) => {
                 const button = document.createElement('button');
@@ -160,18 +187,59 @@
                 if (project.clicked) button.classList.add('checked');
                 button.id = project.id || `btn-${project.text}-${index}`;
 
-                button.addEventListener('click', () => {
+                button.addEventListener('click', debounce(() => {
+                    if (button.classList.contains('disabled')) return;
+                    button.classList.add('disabled');
                     window.open(project.link, '_blank');
                     savedState[index].clicked = true;
-                    saveState(savedState);
+                    saveState(savedState, storageKey);
                     button.classList.add('checked');
-                    setTimeout(() => window.focus(), 100);
-                });
+                    setTimeout(() => {
+                        button.classList.remove('disabled');
+                        window.focus();
+                    }, 1000);
+                }, 500));
+
                 container.appendChild(button);
+            });
+            saveState(savedState, storageKey);
+        }
+
+        function createEcosystemSections() {
+            const ecosystemsContainer = document.getElementById('ecosystems');
+            ecosystemsContainer.innerHTML = "";
+            
+            const shuffledEcosystems = shuffleArray([...ecosystemsData]);
+
+            shuffledEcosystems.forEach(ecosystem => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.classList.add('section');
+
+                const titleDiv = document.createElement('div');
+                titleDiv.classList.add('section-title');
+                titleDiv.innerText = ecosystem.name;
+                titleDiv.onclick = () => toggleSection(ecosystem.containerId);
+
+                const buttonGroupDiv = document.createElement('div');
+                buttonGroupDiv.classList.add('button-group');
+                buttonGroupDiv.id = ecosystem.containerId;
+
+                sectionDiv.appendChild(titleDiv);
+                sectionDiv.appendChild(buttonGroupDiv);
+                ecosystemsContainer.appendChild(sectionDiv);
+
+                createButtons(ecosystem.projects, ecosystem.containerId, ecosystem.storageKey);
             });
         }
 
         function toggleSection(id) {
+            const allSections = document.querySelectorAll('.button-group');
+            allSections.forEach(section => {
+                if (section.id !== id) {
+                    section.style.display = 'none';
+                }
+            });
+
             const section = document.getElementById(id);
             section.style.display = section.style.display === 'flex' ? 'none' : 'flex';
         }
@@ -183,29 +251,34 @@
             const currentTime = now.getTime();
 
             if (!lastReset || (currentTime >= today6AM && parseInt(lastReset) < today6AM)) {
-                localStorage.removeItem('monadState');
+                ecosystemsData.forEach(ecosystem => {
+                    localStorage.removeItem(ecosystem.storageKey);
+                });
                 localStorage.setItem('lastReset', currentTime);
-                createButtons();
+                createEcosystemSections();
             }
         }
 
-        function confirmInput() {
-            const input = document.getElementById('userInput').value;
-            if (input.trim() === "") {
-                alert("请输入内容！");
-            } else {
-                alert("您输入的内容是：" + input);
-                document.getElementById('userInput').value = ""; // 清空输入框
-            }
-        }
+        document.getElementById('resetProjectsButton').addEventListener('click', () => {
+            ecosystemsData.forEach(ecosystem => {
+                const savedState = loadState(ecosystem.storageKey);
+                if (savedState) {
+                    const resetState = savedState.map(item => ({ ...item, clicked: false }));
+                    saveState(resetState, ecosystem.storageKey);
+                }
+                createButtons(ecosystem.projects, ecosystem.containerId, ecosystem.storageKey);
+            });
+        });
 
-        document.getElementById('resetButton').addEventListener('click', () => {
-            localStorage.removeItem('monadState');
-            createButtons();
+        document.getElementById('resetEcosystemsButton').addEventListener('click', () => {
+            ecosystemsData.forEach(ecosystem => {
+                localStorage.removeItem(ecosystem.storageKey);
+            });
+            createEcosystemSections();
         });
 
         resetDaily();
-        createButtons();
+        createEcosystemSections();
     </script>
 </body>
 </html>
